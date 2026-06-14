@@ -19,6 +19,11 @@ function progress() {
   if (!state.progress[currentLessonId]) state.progress[currentLessonId] = { score:0, question:0 };
   return state.progress[currentLessonId];
 }
+function syncCompletedLessons() {
+  for(const id of lessonIds) {
+    if((state.progress[id]?.score || 0)>=10 && !state.completed.includes(id)) state.completed.push(id);
+  }
+}
 function lessonProgress() {
   if(!state.lessonState[currentLessonId]) state.lessonState[currentLessonId]={section:0,passed:[]};
   if(!Array.isArray(state.lessonState[currentLessonId].passed)) state.lessonState[currentLessonId].passed=[];
@@ -122,12 +127,14 @@ function layout(content) {
 }
 
 function portal() {
+  syncCompletedLessons();
+  persist();
   const done = state.completed.length;
   const average = lessonIds.length ? Math.round(lessonIds.reduce((sum,id)=>sum+(state.progress[id]?.score || 0),0)/lessonIds.length) : 0;
   const lessonRows = lessonIds.map((id,index)=>{
     const item = COURSE.lessons[id];
     const p = state.progress[id] || {score:0};
-    const complete = state.completed.includes(id);
+    const complete = state.completed.includes(id) || p.score>=10;
     return `<button class="lesson-row" data-lesson="${id}"><span class="lesson-index">${String(index+1).padStart(2,'0')}</span><span><strong>${item.title}</strong><small>${item.standard} · ${item.estimated}</small></span><span class="lesson-status">${complete?'Complete':`${p.score}/10`}</span><span aria-hidden="true">→</span></button>`;
   }).join('');
   layout(`<div class="portal"><section class="portal-intro"><div><p class="eyebrow">Florida Precalculus Honors · 1202340</p><h1>Learn<br>the line.</h1></div><div><p class="intro-copy">Clear lessons. Practice built into every step. A complete 36-lesson path through Florida precalculus.</p><button class="primary" data-lesson="${currentLessonId}">Continue learning <span aria-hidden="true">→</span></button></div></section><section class="stats"><div class="stat"><strong>${done}</strong><span>lessons complete</span></div><div class="stat"><strong>${average}/10</strong><span>average mastery</span></div><div class="stat"><strong>${lessonIds.length}</strong><span>lessons available</span></div><div class="stat"><strong>36</strong><span>lessons planned</span></div></section><section class="available"><div class="section-heading"><h2>Available now</h2><span class="eyebrow">Tab to choose · Enter to open</span></div>${lessonRows}</section></div>`);
@@ -238,6 +245,7 @@ function bind() {
     e.preventDefault(); const p=progress(); const q=lesson.practice[p.question%lesson.practice.length];
     const correct=matches(e.target.querySelector('input').value,q.accepted);
     p.score=Math.max(0,Math.min(10,p.score+(correct?1:-1)));
+    if(p.score>=10 && !state.completed.includes(lesson.id)) state.completed.push(lesson.id);
     state.feedback=correct?'Correct. Your mastery moves up one.':`Not quite. The answer is ${q.a}. Your mastery moves down one.`;
     p.question=(p.question+1)%lesson.practice.length; persist(); announce(state.feedback); render();
   });
