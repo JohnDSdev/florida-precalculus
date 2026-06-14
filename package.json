@@ -1,0 +1,28 @@
+{
+  "name": "florida-precalculus",
+  "version": "1.0.0",
+  "description": "A dependency-free, keyboard-first learning portal aligned to Florida Precalculus Honors course `1202340`.",
+  "main": "app.js",
+  "scripts": {
+    "build:cloud": "esbuild cloud-source.js --bundle --format=iife --platform=browser --target=es2020 --outfile=instant-cloud.js",
+    "test": "node --check app.js && node --check lessons.js && node --check cloud-source.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JohnDSdev/florida-precalculus.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/JohnDSdev/florida-precalculus/issues"
+  },
+  "homepage": "https://github.com/JohnDSdev/florida-precalculus#readme",
+  "dependencies": {
+    "@instantdb/core": "^1.0.49"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1"
+  }
+}

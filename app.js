@@ -1,5 +1,6 @@
 const app = document.querySelector('#app');
 const live = document.querySelector('#live-region');
+const cloud = window.LineworkCloud;
 const lessonIds = Object.keys(COURSE.lessons);
 const saved = JSON.parse(localStorage.getItem('linework-progress') || '{}');
 let currentLessonId = saved.currentLessonId && COURSE.lessons[saved.currentLessonId] ? saved.currentLessonId : lessonIds[0];
@@ -12,17 +13,21 @@ const savedView = ['portal','overview','lesson','examples','practice'].includes(
 const state = {
   view:savedView, section:saved.lessonState?.[currentLessonId]?.section || 0, completed:saved.completed || [], guide:false,
   feedback:'', exampleReturn:null, theme:saved.theme || 'light',
-  progress:saved.progress || legacyProgress, lessonState:saved.lessonState || {}
+  progress:saved.progress || legacyProgress, lessonState:saved.lessonState || {}, updatedAt:saved.updatedAt || 0,
+  modal:null, authStep:'email', authEmail:'', modalMessage:'', cloudReady:false, pendingFeedback:false,
 };
+let cloudSaveTimer;
 
 function progress() {
   if (!state.progress[currentLessonId]) state.progress[currentLessonId] = { score:0, question:0 };
   return state.progress[currentLessonId];
 }
 function syncCompletedLessons() {
+  let changed=false;
   for(const id of lessonIds) {
-    if((state.progress[id]?.score || 0)>=10 && !state.completed.includes(id)) state.completed.push(id);
+    if((state.progress[id]?.score || 0)>=10 && !state.completed.includes(id)) { state.completed.push(id); changed=true; }
   }
+  return changed;
 }
 function lessonProgress() {
   if(!state.lessonState[currentLessonId]) state.lessonState[currentLessonId]={section:0,passed:[]};
@@ -30,11 +35,20 @@ function lessonProgress() {
   return state.lessonState[currentLessonId];
 }
 function sectionPassed() { return lessonProgress().passed.includes(lesson.sections[state.section].id); }
-function persist() {
-  localStorage.setItem('linework-progress', JSON.stringify({
+function progressSnapshot() {
+  return {
     currentLessonId, view:state.view, completed:state.completed, theme:state.theme,
-    progress:state.progress, lessonState:state.lessonState
-  }));
+    progress:state.progress, lessonState:state.lessonState, updatedAt:state.updatedAt,
+  };
+}
+function persist(options={}) {
+  if(!options.keepTimestamp) state.updatedAt=Date.now();
+  const snapshot=progressSnapshot();
+  localStorage.setItem('linework-progress', JSON.stringify(snapshot));
+  if(!options.localOnly && cloud?.user && state.cloudReady) {
+    clearTimeout(cloudSaveTimer);
+    cloudSaveTimer=setTimeout(()=>cloud.saveProgress(progressSnapshot()).catch(showCloudError),450);
+  }
 }
 function normalize(value) {
   return answerExpression(value).toLowerCase().replace(/[\s*]/g,'').replace(/−/g,'-').replace(/²/g,'^2')
@@ -116,19 +130,46 @@ function mathHTML(value) {
 }
 function announce(message) { live.textContent=''; requestAnimationFrame(()=>live.textContent=message); }
 function themeLabel() { return state.theme === 'dark' ? 'light' : 'dark'; }
+function accountLabel() {
+  if(!cloud?.user) return 'sign in';
+  return cloud.profile?.username || cloud.user.email?.split('@')[0] || 'account';
+}
 
 function header() {
-  return `<header class="topbar ${state.view==='portal'?'portal-topbar':''}"><button type="button" class="brand" data-go="portal" aria-label="Go to course portal">linework</button><div class="top-actions"><span class="course-id">FL · ${COURSE.courseNumber}</span><button type="button" class="text-button" data-guide><span class="key">?</span>keys</button></div></header>`;
+  return `<header class="topbar ${state.view==='portal'?'portal-topbar':''}"><button type="button" class="brand" data-go="portal" aria-label="Go to course portal">linework</button><div class="top-actions"><span class="course-id">FL · ${COURSE.courseNumber}</span><button type="button" class="text-button" data-feedback><span class="key">F</span>feedback</button><button type="button" class="text-button" data-account><span class="sync-dot ${cloud?.user?'online':''}" aria-hidden="true"></span>${escapeHTML(accountLabel())}</button><button type="button" class="text-button" data-guide><span class="key">?</span>keys</button></div></header>`;
 }
 function layout(content) {
   document.documentElement.dataset.theme = state.theme;
-  app.innerHTML = `<div class="shell">${header()}<main>${content}</main></div>${state.guide ? guide() : ''}`;
+  app.innerHTML = `<div class="shell">${header()}<main>${content}</main></div>${state.guide ? guide() : ''}${state.modal ? modal() : ''}`;
   bind(); updatePortalHeader();
 }
 
+function modal() {
+  if(state.modal==='auth') return authModal();
+  if(state.modal==='account') return accountModal();
+  return feedbackModal();
+}
+function modalFrame(title,body) {
+  return `<aside class="modal-screen" role="dialog" aria-modal="true" aria-label="${escapeHTML(title)}"><div class="modal-bar"><span>${escapeHTML(title)}</span><button type="button" class="text-button" data-close-modal><span class="key">Esc</span>close</button></div><div class="modal-body">${body}</div></aside>`;
+}
+function authModal() {
+  if(state.authStep==='code') return modalFrame('Sign in',`<p class="eyebrow">Check your email</p><h2>Enter the code.</h2><p>Instant sent a magic code to <strong>${escapeHTML(state.authEmail)}</strong>. This device will stay signed in.</p><form class="modal-form" data-code-form><label>Magic code<input name="code" inputmode="numeric" autocomplete="one-time-code" required autofocus></label><button class="primary">Verify code</button></form><button type="button" class="text-button" data-change-email>Use another email</button><p class="modal-message">${escapeHTML(state.modalMessage)}</p>`);
+  return modalFrame('Sign in',`<p class="eyebrow">Optional cloud sync</p><h2>Keep your place<br>across devices.</h2><p>Every lesson works without an account. Sign in only to sync progress and send feedback.</p><form class="modal-form" data-email-form><label>Email address<input name="email" type="email" autocomplete="email" required autofocus></label><button class="primary">Send magic code</button></form><p class="modal-message">${escapeHTML(state.modalMessage)}</p>`);
+}
+function accountModal() {
+  if(!cloud?.user) return authModal();
+  const username=cloud.profile?.username || '';
+  return modalFrame('Account',`<p class="eyebrow">Cloud sync active</p><h2>${escapeHTML(accountLabel())}</h2><p>${escapeHTML(cloud.user.email || '')}</p><form class="modal-form" data-username-form><label>Feedback username<input name="username" maxlength="30" value="${escapeHTML(username)}" placeholder="How your feedback is labeled" required></label><button class="primary">Save username</button></form><p class="sync-copy"><span class="sync-dot online"></span> Progress is saved locally and synced with InstantDB.</p><button type="button" class="text-button boxed" data-sign-out>Sign out on this device</button><p class="modal-message">${escapeHTML(state.modalMessage)}</p>`);
+}
+function feedbackModal() {
+  if(!cloud?.user) return authModal();
+  const username=cloud.profile?.username || '';
+  const history=(cloud.feedback || []).slice(0,5).map(item=>`<li><time>${new Date(item.createdAt).toLocaleString()}</time><span>${escapeHTML(item.message)}</span></li>`).join('');
+  return modalFrame('Give feedback',`<p class="eyebrow">Signed in as ${escapeHTML(cloud.user.email || '')}</p><h2>What should<br>change?</h2><form class="modal-form" data-feedback-form><label>Username<input name="username" maxlength="30" value="${escapeHTML(username)}" required></label><label>Feedback<textarea name="message" maxlength="2000" rows="6" placeholder="Tell me what was confusing, broken, or useful." required autofocus></textarea></label><button class="primary">Send feedback</button></form><p class="modal-message">${escapeHTML(state.modalMessage)}</p>${history?`<section class="feedback-history"><h3>Your recent feedback</h3><ol>${history}</ol></section>`:''}`);
+}
+
 function portal() {
-  syncCompletedLessons();
-  persist();
+  if(syncCompletedLessons()) persist();
   const done = state.completed.length;
   const average = lessonIds.length ? Math.round(lessonIds.reduce((sum,id)=>sum+(state.progress[id]?.score || 0),0)/lessonIds.length) : 0;
   const lessonRows = lessonIds.map((id,index)=>{
@@ -190,7 +231,7 @@ function practice() {
   if(p.score<10) requestAnimationFrame(()=>document.querySelector('[data-practice] input')?.focus());
 }
 function guide() {
-  const shortcuts = [['Tab','Move through every control'],['Enter','Open or submit'],['← / →','Previous or next lesson step'],['1–6','Open a lesson step'],['A','Focus the answer box'],['E','Worked examples'],['P','Mastery practice'],['H','Course portal'],['Alt+T','Invert light / dark'],['?','Open this guide'],['Esc','Close guide or leave input']];
+  const shortcuts = [['Tab','Move through every control'],['Enter','Open or submit'],['← / →','Previous or next lesson step'],['1–6','Open a lesson step'],['A','Focus the answer box'],['E','Worked examples'],['P','Mastery practice'],['F','Give feedback'],['H','Course portal'],['Alt+T','Invert light / dark'],['?','Open this guide'],['Esc','Close guide or leave input']];
   return `<aside class="guide" role="dialog" aria-modal="true" aria-label="Keyboard guide"><div class="guide-head"><span class="eyebrow">Keyboard guide</span><button class="text-button" data-guide><span class="key">Esc</span>close</button></div><h2>No mouse<br>needed.</h2><div class="guide-grid">${shortcuts.map(([key,description])=>`<div class="guide-item"><span><span class="key">${key}</span></span><span>${description}</span></div>`).join('')}</div></aside>`;
 }
 
@@ -224,10 +265,72 @@ function updateMathPreview(input) {
 }
 function toggleTheme() { state.theme=state.theme==='dark'?'light':'dark'; persist(); render(); announce(`${state.theme} mode`); }
 function updatePortalHeader() { document.querySelector('.portal-topbar')?.classList.toggle('visible',window.scrollY>80); }
+function showCloudError(error) {
+  state.modalMessage=error?.body?.message || error?.message || 'Cloud sync is unavailable right now.';
+  if(state.modal) render();
+}
+function openFeedback() {
+  state.modalMessage='';
+  if(cloud?.user) state.modal='feedback';
+  else { state.modal='auth'; state.pendingFeedback=true; }
+  render();
+}
+function mergeCloudProgress(remote) {
+  if(!remote) { state.cloudReady=true; persist(); return; }
+  const remoteIsNewer=(remote.updatedAt || 0)>state.updatedAt;
+  state.completed=[...new Set([...(state.completed||[]),...(remote.completed||[])])];
+  for(const [id,item] of Object.entries(remote.progress||{})) {
+    const local=state.progress[id] || {score:0,question:0};
+    state.progress[id]={
+      score:Math.max(local.score||0,item.score||0),
+      question:remoteIsNewer?(item.question||0):(local.question||0),
+    };
+  }
+  for(const [id,item] of Object.entries(remote.lessonState||{})) {
+    const local=state.lessonState[id] || {section:0,passed:[]};
+    state.lessonState[id]={
+      section:remoteIsNewer?(item.section||0):(local.section||0),
+      passed:[...new Set([...(local.passed||[]),...(item.passed||[])])],
+    };
+  }
+  if(remoteIsNewer) {
+    if(COURSE.lessons[remote.currentLessonId]) currentLessonId=remote.currentLessonId;
+    if(['portal','overview','lesson','examples','practice'].includes(remote.view)) state.view=remote.view;
+    lesson=COURSE.lessons[currentLessonId];
+    state.section=state.lessonState[currentLessonId]?.section || 0;
+  }
+  state.updatedAt=Math.max(state.updatedAt,remote.updatedAt||0);
+  state.cloudReady=true;
+  persist();
+}
 function bind() {
   document.querySelectorAll('[data-go]').forEach(el=>el.onclick=()=>go(el.dataset.go));
   document.querySelectorAll('[data-lesson]').forEach(el=>el.onclick=()=>selectLesson(el.dataset.lesson));
   document.querySelectorAll('[data-guide]').forEach(el=>el.onclick=()=>{state.guide=!state.guide;render();});
+  document.querySelectorAll('[data-feedback]').forEach(el=>el.onclick=openFeedback);
+  document.querySelectorAll('[data-account]').forEach(el=>el.onclick=()=>{state.modal=cloud?.user?'account':'auth';state.modalMessage='';render();});
+  document.querySelectorAll('[data-close-modal]').forEach(el=>el.onclick=()=>{state.modal=null;state.pendingFeedback=false;render();});
+  document.querySelector('[data-change-email]')?.addEventListener('click',()=>{state.authStep='email';state.modalMessage='';render();});
+  document.querySelector('[data-email-form]')?.addEventListener('submit',async e=>{
+    e.preventDefault(); state.authEmail=new FormData(e.target).get('email').toString().trim(); state.modalMessage='Sending code…';render();
+    try { await cloud.sendCode(state.authEmail); state.authStep='code';state.modalMessage='';render(); } catch(error) { state.authStep='email';showCloudError(error); }
+  });
+  document.querySelector('[data-code-form]')?.addEventListener('submit',async e=>{
+    e.preventDefault();const code=new FormData(e.target).get('code').toString();state.modalMessage='Verifying…';render();
+    try { await cloud.verifyCode(code); } catch(error) { showCloudError(error); }
+  });
+  document.querySelector('[data-username-form]')?.addEventListener('submit',async e=>{
+    e.preventDefault();const username=new FormData(e.target).get('username').toString();state.modalMessage='Saving…';render();
+    try { await cloud.saveUsername(username);state.modalMessage='Username saved.';render(); } catch(error) { showCloudError(error); }
+  });
+  document.querySelector('[data-feedback-form]')?.addEventListener('submit',async e=>{
+    e.preventDefault();const data=new FormData(e.target);state.modalMessage='Sending…';render();
+    try {
+      await cloud.sendFeedback({username:data.get('username').toString(),message:data.get('message').toString(),lessonId:currentLessonId,view:state.view});
+      state.modalMessage='Feedback sent and timestamped.';render();
+    } catch(error) { showCloudError(error); }
+  });
+  document.querySelector('[data-sign-out]')?.addEventListener('click',async()=>{try{await cloud.signOut();state.modal='auth';state.authStep='email';state.modalMessage='Signed out on this device.';render();}catch(error){showCloudError(error);}});
   document.querySelector('[data-start]')?.addEventListener('click',()=>{state.view='lesson';state.section=lessonProgress().section || 0;persist();render();});
   document.querySelectorAll('[data-section]').forEach(el=>el.onclick=()=>{state.view='lesson';state.section=Number(el.dataset.section);lessonProgress().section=state.section;state.feedback='';persist();render();window.scrollTo(0,0);});
   document.querySelector('[data-next]')?.addEventListener('click',next);
@@ -256,7 +359,7 @@ function bind() {
 
 document.addEventListener('keydown',e=>{
   if(e.repeat) return;
-  const inInput=e.target instanceof HTMLInputElement;
+  const inInput=e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
   if(inInput) {
     if(e.key==='Escape') e.target.blur();
     else if(sectionPassed() && e.key==='ArrowRight') { e.preventDefault(); next(); }
@@ -264,17 +367,31 @@ document.addEventListener('keydown',e=>{
     return;
   }
   if(e.key==='?' ) { state.guide=!state.guide; render(); return; }
+  if(e.key==='Escape' && state.modal) { state.modal=null;state.pendingFeedback=false;render();return; }
   if(e.key==='Escape' && state.guide) { state.guide=false; render(); return; }
-  if(state.guide) return;
+  if(state.guide || state.modal) return;
   const key=e.key.toLowerCase();
   if(key==='h') go('portal');
   else if(key==='t' && e.altKey) { e.preventDefault(); toggleTheme(); }
   else if(key==='p') go('practice');
   else if(key==='e') go('examples');
+  else if(key==='f') { e.preventDefault(); openFeedback(); }
   else if(key==='a') { e.preventDefault(); document.querySelector('.math-entry input')?.focus(); }
   else if(/^[1-9]$/.test(key) && state.view==='lesson') { const index=Number(key)-1; if(index<lesson.sections.length){state.section=index;lessonProgress().section=state.section;persist();render();window.scrollTo(0,0);} }
   else if(e.key==='ArrowRight') next();
   else if(e.key==='ArrowLeft') prev();
 });
+window.addEventListener('linework-auth',event=>{
+  if(event.detail.user) {
+    state.modal=state.pendingFeedback?'feedback':(state.modal==='auth'?'account':state.modal);
+    state.authStep='email';state.modalMessage='';render();
+  } else if(!event.detail.user && state.modal==='account') { state.modal='auth';render(); }
+});
+window.addEventListener('linework-cloud-data',event=>{
+  const remote=event.detail.progress;
+  if(!state.cloudReady || (remote?.updatedAt||0)>state.updatedAt) mergeCloudProgress(remote);
+  else if(state.modal) render();
+});
+window.addEventListener('linework-cloud-error',event=>{state.modalMessage=event.detail.message;if(state.modal)render();});
 window.addEventListener('scroll',updatePortalHeader,{passive:true});
 render();

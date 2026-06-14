@@ -22,6 +22,20 @@ The shared renderer in `app.js` supplies full-screen navigation, embedded checks
 
 Current lessons are stored independently under `lesson-drafts/` and loaded after the core course map. Seven lessons are currently available.
 
+## InstantDB
+
+Optional email magic-code sign-in syncs progress between devices. Anonymous learners retain the full local experience. Signed-in learners can send timestamped feedback labeled with their username.
+
+Feedback is available to the app owner in the Instant dashboard under **Explorer → feedback**. The client app also shows each learner their recent feedback.
+
+```bash
+npm install
+npm run build:cloud
+npx instant-cli@latest push all
+```
+
+The public app ID is intentionally included in `cloud-source.js`. Never commit an Instant admin token.
+
 ## Planned course size
 
 The complete course is planned as 36 lessons:
