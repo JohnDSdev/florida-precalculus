@@ -10,10 +10,13 @@ const legacyProgress = saved.score !== undefined ? {
   'difference-quotients': { score:saved.score || 0, question:saved.question || 0 }
 } : {};
 const savedView = ['portal','overview','lesson','examples','practice'].includes(saved.view) ? saved.view : 'portal';
+const savedResume = saved.resume && COURSE.lessons[saved.resume.lessonId] && ['overview','lesson','examples','practice'].includes(saved.resume.view) ? saved.resume
+  : saved.currentLessonId && COURSE.lessons[saved.currentLessonId] ? {lessonId:saved.currentLessonId,view:savedView==='portal'?'lesson':savedView,section:saved.lessonState?.[saved.currentLessonId]?.section||0} : null;
 const state = {
   view:savedView, section:saved.lessonState?.[currentLessonId]?.section || 0, completed:saved.completed || [], guide:false,
   feedback:'', exampleReturn:null, theme:saved.theme || 'light',
-  progress:saved.progress || legacyProgress, lessonState:saved.lessonState || {}, updatedAt:saved.updatedAt || 0,
+  progress:saved.progress || legacyProgress, lessonState:saved.lessonState || {}, resume:savedResume,
+  activityDays:Array.isArray(saved.activityDays)?saved.activityDays:[], updatedAt:saved.updatedAt || 0,
   modal:null, authStep:'email', authEmail:'', modalMessage:'', cloudReady:false, pendingFeedback:false,
 };
 let cloudSaveTimer;
@@ -38,10 +41,14 @@ function sectionPassed() { return lessonProgress().passed.includes(lesson.sectio
 function progressSnapshot() {
   return {
     currentLessonId, view:state.view, completed:state.completed, theme:state.theme,
-    progress:state.progress, lessonState:state.lessonState, updatedAt:state.updatedAt,
+    progress:state.progress, lessonState:state.lessonState, resume:state.resume,
+    activityDays:state.activityDays, updatedAt:state.updatedAt,
   };
 }
 function persist(options={}) {
+  if(['overview','lesson','examples','practice'].includes(state.view)) {
+    state.resume={lessonId:currentLessonId,view:state.view,section:state.section};
+  }
   if(!options.keepTimestamp) state.updatedAt=Date.now();
   const snapshot=progressSnapshot();
   localStorage.setItem('linework-progress', JSON.stringify(snapshot));
@@ -134,6 +141,23 @@ function accountLabel() {
   if(!cloud?.user) return 'sign in';
   return cloud.profile?.username || cloud.user.email?.split('@')[0] || 'account';
 }
+function localDayKey(date=new Date()) {
+  const year=date.getFullYear(), month=String(date.getMonth()+1).padStart(2,'0'), day=String(date.getDate()).padStart(2,'0');
+  return `${year}-${month}-${day}`;
+}
+function dayBefore(key) {
+  const [year,month,day]=key.split('-').map(Number); const date=new Date(year,month-1,day-1);
+  return localDayKey(date);
+}
+function currentStreak() {
+  const days=new Set(state.activityDays||[]); let cursor=localDayKey();
+  if(!days.has(cursor)) cursor=dayBefore(cursor);
+  let count=0; while(days.has(cursor)){count++;cursor=dayBefore(cursor);} return count;
+}
+function recordLessonDay() {
+  const today=localDayKey();
+  if(!state.activityDays.includes(today)) state.activityDays.push(today);
+}
 
 function header() {
   return `<header class="topbar ${state.view==='portal'?'portal-topbar':''}"><button type="button" class="brand" data-go="portal" aria-label="Go to course portal">linework</button><div class="top-actions"><button type="button" class="text-button account-button" data-account><span class="sync-dot ${cloud?.user?'online':''}" aria-hidden="true"></span>${escapeHTML(cloud?.user ? accountLabel() : 'login')}</button><button type="button" class="text-button help-button" data-guide aria-label="Open keyboard guide"><span class="key">?</span></button></div></header>`;
@@ -141,7 +165,7 @@ function header() {
 function layout(content) {
   document.documentElement.dataset.theme = state.theme;
   app.innerHTML = `<div class="shell">${header()}<main>${content}</main></div>${state.guide ? guide() : ''}${state.modal ? modal() : ''}`;
-  bind(); updatePortalHeader();
+  bind(); updateScrollChrome();
 }
 
 function modal() {
@@ -159,7 +183,7 @@ function authModal() {
 function accountModal() {
   if(!cloud?.user) return authModal();
   const username=cloud.profile?.username || '';
-  return modalFrame('Account',`<p class="eyebrow">Cloud sync active</p><h2>${escapeHTML(accountLabel())}</h2><p>${escapeHTML(cloud.user.email || '')}</p><form class="modal-form" data-username-form><label>Feedback username<input name="username" maxlength="30" value="${escapeHTML(username)}" placeholder="How your feedback is labeled" required></label><button class="primary">Save username</button></form><p class="sync-copy"><span class="sync-dot online"></span> Progress is saved locally and synced with InstantDB.</p><button type="button" class="text-button boxed" data-sign-out>Sign out on this device</button><p class="modal-message">${escapeHTML(state.modalMessage)}</p>`);
+  return modalFrame('Account',`<p class="eyebrow">Cloud sync active</p><h2>${escapeHTML(accountLabel())}</h2><p>${escapeHTML(cloud.user.email || '')}</p><p class="account-streak"><strong>${currentStreak()}</strong> day lesson streak</p><form class="modal-form" data-username-form><label>Feedback username<input name="username" maxlength="30" value="${escapeHTML(username)}" placeholder="How your feedback is labeled" required></label><button class="primary">Save username</button></form><p class="sync-copy"><span class="sync-dot online"></span> Progress is saved locally and synced with InstantDB.</p><button type="button" class="text-button boxed" data-sign-out>Sign out on this device</button><p class="modal-message">${escapeHTML(state.modalMessage)}</p>`);
 }
 function feedbackModal() {
   if(!cloud?.user) return authModal();
@@ -178,7 +202,8 @@ function portal() {
     const complete = state.completed.includes(id) || p.score>=10;
     return `<button class="lesson-row" data-lesson="${id}"><span class="lesson-index">${String(index+1).padStart(2,'0')}</span><span><strong>${item.title}</strong><small>${item.standard} · ${item.estimated}</small></span><span class="lesson-status">${complete?'Complete':`${p.score}/10`}</span><span aria-hidden="true">→</span></button>`;
   }).join('');
-  layout(`<div class="portal"><section class="portal-intro"><div><p class="eyebrow">Florida Precalculus Honors · 1202340</p><h1>Learn<br>the line.</h1></div><div><p class="intro-copy">Clear lessons. Practice built into every step. A complete 36-lesson path through Florida precalculus.</p><button class="primary" data-lesson="${currentLessonId}">Continue learning <span aria-hidden="true">→</span></button></div></section><section class="stats"><div class="stat"><strong>${done}</strong><span>lessons complete</span></div><div class="stat"><strong>${average}/10</strong><span>average mastery</span></div><div class="stat"><strong>${lessonIds.length}</strong><span>lessons available</span></div><div class="stat"><strong>36</strong><span>lessons planned</span></div></section><section class="available"><div class="section-heading"><h2>Available now</h2><span class="eyebrow">Tab to choose · Enter to open</span></div>${lessonRows}</section></div>`);
+  const streak=cloud?.user?`<div class="stat streak-stat"><strong>${currentStreak()}</strong><span>day lesson streak</span></div>`:'';
+  layout(`<div class="portal"><section class="portal-intro"><div><p class="eyebrow">Florida Precalculus Honors · 1202340</p><h1>Learn<br>the line.</h1></div><div><p class="intro-copy">Clear lessons. Practice built into every step. A complete 36-lesson path through Florida precalculus.</p><button class="primary" ${cloud?.user?'data-resume':'data-lesson="'+currentLessonId+'"'}>Continue learning <span aria-hidden="true">→</span></button></div></section><section class="stats ${cloud?.user?'signed-in':''}"><div class="stat"><strong>${done}</strong><span>lessons complete</span></div><div class="stat"><strong>${average}/10</strong><span>average mastery</span></div>${streak}<div class="stat"><strong>${lessonIds.length}</strong><span>lessons available</span></div><div class="stat"><strong>36</strong><span>lessons planned</span></div></section><section class="available"><div class="section-heading"><h2>Available now</h2><span class="eyebrow">Tab to choose · Enter to open</span></div>${lessonRows}</section></div>`);
 }
 
 function overview() {
@@ -218,6 +243,10 @@ function diagram(type) {
 function mathEntry(label='Your answer') {
   return `<div class="math-entry"><div class="math-preview empty" aria-hidden="true">Your math will appear here</div><input aria-label="${label}" autocomplete="off" spellcheck="false" placeholder="Type with ^ for powers and / for fractions"></div>`;
 }
+function practiceEntry(question) {
+  if(!question.choices) return mathEntry('Practice answer');
+  return `<label class="choice-entry"><span>Choose an answer</span><select aria-label="Practice answer" required><option value="">Select one</option>${question.choices.map(choice=>`<option value="${escapeHTML(choice)}">${escapeHTML(choice)}</option>`).join('')}</select></label>`;
+}
 function lessonSection() {
   const s = lesson.sections[state.section];
   const extraStart = lesson.sections.length + 1;
@@ -231,8 +260,8 @@ function examples() {
 function practice() {
   const p = progress();
   const q = lesson.practice[p.question % lesson.practice.length];
-  layout(`<section class="practice"><h1>Practice.</h1><div class="mastery" tabindex="0" aria-describedby="mastery-tip"><span class="mastery-label">Reach 10</span><div class="track"><div class="track-fill" style="width:${p.score*10}%"></div><div class="ticks">${Array.from({length:11},()=>'<i></i>').join('')}</div></div><span class="score">${p.score}</span><span class="mastery-tip" id="mastery-tip" role="tooltip">Correct +1 · Incorrect −1 · Score never drops below 0</span></div>${p.score>=10?`<section class="completion"><p class="eyebrow">Lesson complete</p><div class="question">You reached 10. You have mastered ${lesson.title.toLowerCase()}.</div><button class="primary" data-finish>Return to portal</button></section>`:`<div class="practice-body"><div class="practice-question"><div class="question-number">Question ${(p.question%lesson.practice.length)+1} of ${lesson.practice.length}</div><div class="question">${mathHTML(q.q)}</div><form data-practice>${mathEntry('Practice answer')}<div class="practice-actions"><button class="primary">Submit answer</button><button type="button" class="text-button boxed" data-skip>Skip →</button></div></form><p class="feedback">${state.feedback}</p></div><aside class="example-links"><h3>Reference examples</h3>${lesson.examples.map((ex,i)=>`<button data-example="${i}"><span>0${i+1}</span><strong>${ex.title}</strong><small>${mathHTML(ex.problem)}</small></button>`).join('')}</aside></div>`}</section>`);
-  if(p.score<10) requestAnimationFrame(()=>document.querySelector('[data-practice] input')?.focus());
+  layout(`<section class="practice"><h1>Practice.</h1><div class="mastery" tabindex="0" aria-describedby="mastery-tip"><span class="mastery-label">Reach 10</span><div class="track"><div class="track-fill" style="width:${p.score*10}%"></div><div class="ticks">${Array.from({length:11},()=>'<i></i>').join('')}</div></div><span class="score">${p.score}</span><span class="mastery-tip" id="mastery-tip" role="tooltip">Correct +1 · Incorrect −1 · Score never drops below 0</span></div>${p.score>=10?`<section class="completion"><p class="eyebrow">Lesson complete</p><div class="question">You reached 10. You have mastered ${lesson.title.toLowerCase()}.</div><button class="primary" data-finish>Return to portal</button></section>`:`<div class="practice-body"><div class="practice-question"><div class="question-number">Question ${(p.question%lesson.practice.length)+1} of ${lesson.practice.length}</div><div class="question">${mathHTML(q.q)}</div><form data-practice>${practiceEntry(q)}<div class="practice-actions"><button class="primary">Submit answer</button><button type="button" class="text-button boxed" data-skip>Skip →</button></div></form><p class="feedback">${state.feedback}</p></div><aside class="example-links"><h3>Reference examples</h3>${lesson.examples.map((ex,i)=>`<button data-example="${i}"><span>0${i+1}</span><strong>${ex.title}</strong><small>${mathHTML(ex.problem)}</small></button>`).join('')}</aside></div>`}</section>`);
+  if(p.score<10) requestAnimationFrame(()=>document.querySelector('[data-practice] input, [data-practice] select')?.focus());
 }
 function guide() {
   const shortcuts = [['Tab','Move through every control'],['Enter','Open or submit'],['← / →','Previous or next lesson step'],['1–6','Open a lesson step'],['A','Focus the answer box'],['E','Worked examples'],['P','Mastery practice'],['F','Give feedback'],['H','Course portal'],['Alt+T','Invert light / dark'],['?','Open this guide'],['Esc','Close guide or leave input']];
@@ -240,6 +269,13 @@ function guide() {
 }
 
 function selectLesson(id) { currentLessonId=id; lesson=COURSE.lessons[id]; state.section=lessonProgress().section || 0; persist(); go('overview'); }
+function resumeLearning() {
+  const resume=state.resume;
+  if(!resume || !COURSE.lessons[resume.lessonId]) { selectLesson(currentLessonId); return; }
+  currentLessonId=resume.lessonId; lesson=COURSE.lessons[currentLessonId];
+  state.view=resume.view; state.section=Math.min(resume.section||0,lesson.sections.length-1);
+  persist(); render(); window.scrollTo(0,0);
+}
 function go(view) { state.view=view; state.feedback=''; if(view!=='examples') state.exampleReturn=null; persist(); render(); window.scrollTo(0,0); }
 function render() {
   if(state.view==='portal') portal(); else if(state.view==='overview') overview();
@@ -268,7 +304,10 @@ function updateMathPreview(input) {
   preview.classList.toggle('empty', !input.value);
 }
 function toggleTheme() { state.theme=state.theme==='dark'?'light':'dark'; persist(); render(); announce(`${state.theme} mode`); }
-function updatePortalHeader() { document.querySelector('.portal-topbar')?.classList.toggle('visible',window.scrollY>80); }
+function updateScrollChrome() {
+  document.querySelector('.portal-topbar')?.classList.toggle('visible',window.scrollY>80);
+  document.documentElement.classList.toggle('lesson-scrolled',state.view==='lesson'&&window.scrollY>48);
+}
 function showCloudError(error) {
   state.modalMessage=error?.body?.message || error?.message || 'Cloud sync is unavailable right now.';
   if(state.modal) render();
@@ -281,8 +320,10 @@ function openFeedback() {
 }
 function mergeCloudProgress(remote) {
   if(!remote) { state.cloudReady=true; persist(); return; }
+  const stayOnPortal=state.view==='portal';
   const remoteIsNewer=(remote.updatedAt || 0)>state.updatedAt;
   state.completed=[...new Set([...(state.completed||[]),...(remote.completed||[])])];
+  state.activityDays=[...new Set([...(state.activityDays||[]),...(remote.activityDays||[])])].sort();
   for(const [id,item] of Object.entries(remote.progress||{})) {
     const local=state.progress[id] || {score:0,question:0};
     state.progress[id]={
@@ -299,9 +340,11 @@ function mergeCloudProgress(remote) {
   }
   if(remoteIsNewer) {
     if(COURSE.lessons[remote.currentLessonId]) currentLessonId=remote.currentLessonId;
-    if(['portal','overview','lesson','examples','practice'].includes(remote.view)) state.view=remote.view;
+    if(!stayOnPortal && ['portal','overview','lesson','examples','practice'].includes(remote.view)) state.view=remote.view;
     lesson=COURSE.lessons[currentLessonId];
     state.section=state.lessonState[currentLessonId]?.section || 0;
+    if(remote.resume && COURSE.lessons[remote.resume.lessonId] && ['overview','lesson','examples','practice'].includes(remote.resume.view)) state.resume=remote.resume;
+    else if(COURSE.lessons[remote.currentLessonId]) state.resume={lessonId:remote.currentLessonId,view:['overview','lesson','examples','practice'].includes(remote.view)?remote.view:'lesson',section:remote.lessonState?.[remote.currentLessonId]?.section||0};
   }
   state.updatedAt=Math.max(state.updatedAt,remote.updatedAt||0);
   state.cloudReady=true;
@@ -310,6 +353,7 @@ function mergeCloudProgress(remote) {
 function bind() {
   document.querySelectorAll('[data-go]').forEach(el=>el.onclick=()=>go(el.dataset.go));
   document.querySelectorAll('[data-lesson]').forEach(el=>el.onclick=()=>selectLesson(el.dataset.lesson));
+  document.querySelector('[data-resume]')?.addEventListener('click',resumeLearning);
   document.querySelectorAll('[data-guide]').forEach(el=>el.onclick=()=>{state.guide=!state.guide;render();});
   document.querySelectorAll('[data-feedback]').forEach(el=>el.onclick=openFeedback);
   document.querySelectorAll('[data-account]').forEach(el=>el.onclick=()=>{state.modal=cloud?.user?'account':'auth';state.modalMessage='';render();});
@@ -350,10 +394,12 @@ function bind() {
   });
   document.querySelector('[data-practice]')?.addEventListener('submit',e=>{
     e.preventDefault(); const p=progress(); const q=lesson.practice[p.question%lesson.practice.length];
-    const correct=matches(e.target.querySelector('input').value,q.accepted);
+    const control=e.target.querySelector('input, select'); const correct=matches(control.value,q.accepted);
+    const previousScore=p.score;
     p.score=Math.max(0,Math.min(10,p.score+(correct?1:-1)));
+    if(previousScore<10 && p.score>=10) recordLessonDay();
     if(p.score>=10 && !state.completed.includes(lesson.id)) state.completed.push(lesson.id);
-    state.feedback=correct?'Correct. Your mastery moves up one.':`Not quite. The answer is ${q.a}. Your mastery moves down one.`;
+    state.feedback=correct?'Correct. Your mastery moves up one.':previousScore===0?`Not quite. The answer is ${q.a}. Your mastery stays at zero.`:`Not quite. The answer is ${q.a}. Your mastery moves down one.`;
     p.question=(p.question+1)%lesson.practice.length; persist(); announce(state.feedback); render();
   });
   document.querySelector('[data-skip]')?.addEventListener('click',()=>{const p=progress();p.question=(p.question+1)%lesson.practice.length;state.feedback='Skipped. Your score stays the same.';persist();render();});
@@ -363,7 +409,7 @@ function bind() {
 
 document.addEventListener('keydown',e=>{
   if(e.repeat) return;
-  const inInput=e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
+  const inInput=e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement;
   if(inInput) {
     if(e.key==='Escape') e.target.blur();
     else if(sectionPassed() && e.key==='ArrowRight') { e.preventDefault(); next(); }
@@ -380,7 +426,7 @@ document.addEventListener('keydown',e=>{
   else if(key==='p') go('practice');
   else if(key==='e') go('examples');
   else if(key==='f') { e.preventDefault(); openFeedback(); }
-  else if(key==='a') { e.preventDefault(); document.querySelector('.math-entry input')?.focus(); }
+  else if(key==='a') { e.preventDefault(); document.querySelector('.math-entry input, [data-practice] select')?.focus(); }
   else if(/^[1-9]$/.test(key) && state.view==='lesson') { const index=Number(key)-1; if(index<lesson.sections.length){state.section=index;lessonProgress().section=state.section;persist();render();window.scrollTo(0,0);} }
   else if(e.key==='ArrowRight') next();
   else if(e.key==='ArrowLeft') prev();
@@ -394,8 +440,8 @@ window.addEventListener('linework-auth',event=>{
 window.addEventListener('linework-cloud-data',event=>{
   const remote=event.detail.progress;
   if(!state.cloudReady || (remote?.updatedAt||0)>state.updatedAt) mergeCloudProgress(remote);
-  else if(state.modal) render();
+  if(state.view==='portal'||state.modal) render();
 });
 window.addEventListener('linework-cloud-error',event=>{state.modalMessage=event.detail.message;if(state.modal)render();});
-window.addEventListener('scroll',updatePortalHeader,{passive:true});
+window.addEventListener('scroll',updateScrollChrome,{passive:true});
 render();

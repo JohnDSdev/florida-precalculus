@@ -158,12 +158,12 @@ window.COURSE.lessons["function-transformations"] = {
     }
   ],
   practice: [
-    { q: "From f(x) to g(x)=f(x−5)+2, state the horizontal shift.", a: "right 5", accepted: ["right 5", "5 right", "right five", "shift right 5", "5 units right"] },
-    { q: "From f(x) to g(x)=f(x−5)+2, state the vertical shift.", a: "up 2", accepted: ["up 2", "2 up", "up two", "shift up 2", "2 units up"] },
-    { q: "Describe the reflection in g(x)=−f(x).", a: "across the x-axis", accepted: ["across the x-axis", "over the x-axis", "x-axis", "x axis", "reflect over x axis"] },
-    { q: "What vertical scale change occurs in g(x)=0.25f(x)?", a: "compression by 1/4", accepted: ["compression by 1/4", "vertical compression by 1/4", "compress by 1/4", "compression by 0.25", "vertical compression factor 0.25"] },
-    { q: "What horizontal scale change occurs in g(x)=f(3x)?", a: "compression by 1/3", accepted: ["compression by 1/3", "horizontal compression by 1/3", "compress by 1/3", "horizontal compression factor 1/3"] },
-    { q: "What reflection occurs in g(x)=f(−x)?", a: "across the y-axis", accepted: ["across the y-axis", "over the y-axis", "y-axis", "y axis", "reflect over y axis"] },
+    { q: "From f(x) to g(x)=f(x−5)+2, state the horizontal shift.", a: "right 5", accepted: ["right 5"], choices: ["left 5", "right 5", "up 5", "down 5"] },
+    { q: "From f(x) to g(x)=f(x−5)+2, state the vertical shift.", a: "up 2", accepted: ["up 2"], choices: ["left 2", "right 2", "up 2", "down 2"] },
+    { q: "Describe the reflection in g(x)=−f(x).", a: "across the x-axis", accepted: ["across the x-axis"], choices: ["across the x-axis", "across the y-axis", "across y = x", "no reflection"] },
+    { q: "What vertical scale change occurs in g(x)=0.25f(x)?", a: "compression by 1/4", accepted: ["compression by 1/4"], choices: ["compression by 1/4", "stretch by 1/4", "compression by 4", "stretch by 4"] },
+    { q: "What horizontal scale change occurs in g(x)=f(3x)?", a: "compression by 1/3", accepted: ["compression by 1/3"], choices: ["compression by 1/3", "stretch by 1/3", "compression by 3", "stretch by 3"] },
+    { q: "What reflection occurs in g(x)=f(−x)?", a: "across the y-axis", accepted: ["across the y-axis"], choices: ["across the x-axis", "across the y-axis", "across y = x", "no reflection"] },
     { q: "The point (2,7) is on f. Where does it move under g(x)=f(x−4)−3?", a: "(6,4)", accepted: ["(6,4)", "(6, 4)", "6,4", "6, 4"] },
     { q: "The point (8,3) is on f. Where does it move under g(x)=2f(2x)+1?", a: "(4,7)", accepted: ["(4,7)", "(4, 7)", "4,7", "4, 7"] },
     { q: "Find the vertex of y=(x−6)^2−9.", a: "(6,-9)", accepted: ["(6,-9)", "(6,−9)", "(6, -9)", "6,-9", "6, −9"] },
