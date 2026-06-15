@@ -136,7 +136,7 @@ function accountLabel() {
 }
 
 function header() {
-  return `<header class="topbar ${state.view==='portal'?'portal-topbar':''}"><button type="button" class="brand" data-go="portal" aria-label="Go to course portal">linework</button><div class="top-actions"><span class="course-id">FL · ${COURSE.courseNumber}</span><button type="button" class="text-button" data-feedback><span class="key">F</span>feedback</button><button type="button" class="text-button" data-account><span class="sync-dot ${cloud?.user?'online':''}" aria-hidden="true"></span>${escapeHTML(accountLabel())}</button><button type="button" class="text-button" data-guide><span class="key">?</span>keys</button></div></header>`;
+  return `<header class="topbar ${state.view==='portal'?'portal-topbar':''}"><button type="button" class="brand" data-go="portal" aria-label="Go to course portal">linework</button><div class="top-actions"><button type="button" class="text-button help-button" data-guide aria-label="Open keyboard guide"><span class="key">?</span></button></div></header>`;
 }
 function layout(content) {
   document.documentElement.dataset.theme = state.theme;

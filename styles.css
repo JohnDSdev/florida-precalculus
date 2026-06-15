@@ -17,6 +17,8 @@ button { cursor:pointer; }
 .text-button { border:0; background:none; padding:9px 0; border-bottom:1px solid transparent; }
 .text-button:hover,.text-button:focus-visible { border-color:var(--ink); outline:2px solid transparent; }
 .text-button.boxed { border:1px solid var(--ink); padding:13px 17px; }
+.help-button { padding:0; border:0; }
+.help-button .key { margin:0; }
 .key { display:inline-grid; place-items:center; min-width:26px; height:26px; padding:0 7px; border:1px solid var(--ink); font-size:11px; margin-right:7px; }
 main { flex:1; }
 .portal { width:100%; padding:0; }
@@ -171,19 +173,13 @@ sup { font-size:.6em; vertical-align:.6em; line-height:0; }
   .guide-grid { grid-template-columns:1fr; }
   .guide-item:nth-child(odd) { border-right:0; }
   .top-actions { gap:12px; }
-  .top-actions .course-id { display:none; }
   .feedback-history li { grid-template-columns:1fr; gap:7px; }
 }
 @media (max-width:520px) {
   .top-actions { gap:10px; }
   .topbar { padding:0 14px; }
   .top-actions { letter-spacing:.04em; }
-  .top-actions .key { display:none; }
-  .top-actions [data-feedback] { font-size:0; }
-  .top-actions [data-feedback]::after { content:'feedback'; font-size:10px; }
-  .top-actions [data-account] { max-width:92px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10px; }
-  .top-actions [data-guide] { font-size:0; }
-  .top-actions [data-guide]::after { content:'?'; font-size:15px; }
+  .help-button .key { display:inline-grid; }
   .stats { grid-template-columns:1fr; }
   .stat + .stat,.stat:nth-child(3) { border-left:0; border-top:1px solid var(--ink); }
   .section-heading { align-items:flex-start; flex-direction:column; gap:12px; }
