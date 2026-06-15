@@ -19,6 +19,7 @@ button { cursor:pointer; }
 .text-button.boxed { border:1px solid var(--ink); padding:13px 17px; }
 .help-button { padding:0; border:0; }
 .help-button .key { margin:0; }
+.account-button { max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .key { display:inline-grid; place-items:center; min-width:26px; height:26px; padding:0 7px; border:1px solid var(--ink); font-size:11px; margin-right:7px; }
 main { flex:1; }
 .portal { width:100%; padding:0; }
@@ -180,6 +181,7 @@ sup { font-size:.6em; vertical-align:.6em; line-height:0; }
   .topbar { padding:0 14px; }
   .top-actions { letter-spacing:.04em; }
   .help-button .key { display:inline-grid; }
+  .account-button { max-width:100px; font-size:10px; }
   .stats { grid-template-columns:1fr; }
   .stat + .stat,.stat:nth-child(3) { border-left:0; border-top:1px solid var(--ink); }
   .section-heading { align-items:flex-start; flex-direction:column; gap:12px; }
