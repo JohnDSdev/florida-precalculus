@@ -320,7 +320,7 @@ function updateMathPreview(input) {
 function toggleTheme() { state.theme=state.theme==='dark'?'light':'dark'; persist(); render(); announce(`${state.theme} mode`); }
 function updateScrollChrome() {
   document.querySelector('.portal-topbar')?.classList.toggle('visible',window.scrollY>80);
-  document.documentElement.classList.toggle('lesson-scrolled',state.view==='lesson'&&window.scrollY>48);
+  document.documentElement.classList.toggle('lesson-view',state.view==='lesson');
 }
 function showCloudError(error) {
   state.modalMessage=error?.body?.message || error?.message || 'Cloud sync is unavailable right now.';
