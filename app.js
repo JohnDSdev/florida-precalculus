@@ -321,6 +321,7 @@ function toggleTheme() { state.theme=state.theme==='dark'?'light':'dark'; persis
 function updateScrollChrome() {
   document.querySelector('.portal-topbar')?.classList.toggle('visible',window.scrollY>80);
   document.documentElement.classList.toggle('lesson-view',state.view==='lesson');
+  document.documentElement.classList.toggle('lesson-rail-fixed',state.view==='lesson'&&window.scrollY>=72);
 }
 function showCloudError(error) {
   state.modalMessage=error?.body?.message || error?.message || 'Cloud sync is unavailable right now.';
