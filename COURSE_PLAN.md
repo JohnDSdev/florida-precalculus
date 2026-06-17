@@ -422,6 +422,20 @@ Before considering the learner AP-ready, the portal should require:
 - Written explanations that include units, meaning, and justification
 - Consistent performance across equations, graphs, tables, and contextual descriptions
 
+## Diagram Guidelines for Future Lesson Subagents
+
+When a lesson needs a function graph, do not hand-sketch a decorative curve. Build the SVG from the actual function whenever practical.
+
+- Use a plotted graph helper that maps mathematical coordinates to SVG coordinates.
+- Sample the real function over a stated domain and split the curve at discontinuities, asymptotes, or domain breaks.
+- Mark actual features from the lesson: endpoints, intercepts, holes, asymptotes, extrema, period markers, or intersections.
+- Label features with short blue `.graph-tag` boxes so labels stay readable over axes and guide lines.
+- Keep axes, guide lines, and graph features mathematically consistent with the text in that lesson section.
+- Avoid fake curves that only suggest a shape. If the lesson says `sqrt(2x - 6)`, graph `sqrt(2x - 6)`, not a generic square-root arc.
+- Render-check the SVG before finishing. Look for clipped labels, overlapping labels, curves riding along the graph border, and features that do not line up with the stated values.
+- If a graph has out-of-range values near an asymptote, let the curve exit the graph window; do not clamp repeated points so the curve becomes a flat line on the frame.
+- For non-graph diagrams, keep using simple SVGs, but make every visual directly teach the current step rather than decorate the page.
+
 ## Primary References
 
 - Florida CPALMS Precalculus Honors course `1202340`: <https://www.cpalms.org/PreviewCourse/Preview/15>

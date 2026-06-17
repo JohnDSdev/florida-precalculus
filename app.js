@@ -227,6 +227,82 @@ function diagram(type) {
   if(type==='domain-gate') return svg('A domain gate blocks an input that creates division by zero',`${arrow}<path d="M55 160H260M535 160H745" class="heavy" marker-end="url(#arrow)"/><rect x="280" y="70" width="235" height="180" class="shape"/><text x="330" y="135">denominator</text><text x="345" y="190" class="equation">x − 2</text><path d="M385 90L485 230M485 90L385 230" class="strike"/><text x="80" y="125" class="big">x = 2</text><text x="595" y="125" class="big">blocked</text>`);
   if(type.includes('inverse')) return svg('A function and its inverse undo one another',`${arrow}<path d="M55 115H255M545 115H745M745 220H545M255 220H55" class="heavy" marker-end="url(#arrow)"/><rect x="275" y="55" width="250" height="120" class="shape"/><rect x="275" y="185" width="250" height="80" class="shape"/><text x="80" y="90" class="big">input</text><text x="350" y="125" class="equation">f</text><text x="655" y="90" class="big">output</text><text x="340" y="235" class="equation">f⁻¹</text>`);
   if(type.includes('horizontal-line')) return svg('Horizontal line test across a function graph',`<path d="M70 270H745M110 295V30" class="axis"/><path d="M140 250C250 230 260 70 390 75S540 260 690 120" class="curve"/><path d="M90 145H730" class="strike"/><circle cx="225" cy="145" r="7"/><circle cx="580" cy="145" r="7"/><text x="500" y="125">two intersections</text>`);
+  const radicalGraph = ({label,xMin=-8,xMax=8,yMin=-4,yMax=6,curves=[],guides=[],points=[],labels=[]}) => {
+    const left=70,right=750,top=35,bottom=285,width=right-left,height=bottom-top;
+    const sx=x=>left+((x-xMin)/(xMax-xMin))*width;
+    const sy=y=>bottom-((y-yMin)/(yMax-yMin))*height;
+    const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
+    const tag=(x,y,text,anchor='start')=>{
+      const clean=String(text);
+      const tagWidth=Math.max(36,clean.length*7.4+14);
+      const rectX=anchor==='end'?x-tagWidth:x;
+      const textX=anchor==='end'?x-7:x+7;
+      return `<g class="graph-tag"><rect x="${rectX.toFixed(1)}" y="${(y-15).toFixed(1)}" width="${tagWidth.toFixed(1)}" height="20"/><text x="${textX.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="${anchor}">${clean}</text></g>`;
+    };
+    const pathFor=curve=>{
+      const commands=[]; let lastZone='';
+      for(let i=0;i<=140;i++) {
+        const x=curve.from+(curve.to-curve.from)*(i/140);
+        const rawY=curve.fn(x);
+        if(!Number.isFinite(rawY)) continue;
+        const zone=rawY>yMax?'above':rawY<yMin?'below':'inside';
+        if(zone!=='inside'&&zone===lastZone) continue;
+        commands.push(`${commands.length?'L':'M'}${sx(x).toFixed(1)} ${sy(clamp(rawY,yMin,yMax)).toFixed(1)}`);
+        lastZone=zone;
+      }
+      return commands.join('');
+    };
+    const axisX=yMin<0&&yMax>0?sy(0):bottom;
+    const axisY=xMin<0&&xMax>0?sx(0):left;
+    const guideMarks=guides.map(g=>g.x!==undefined
+      ? `<path d="M${sx(g.x).toFixed(1)} ${top}V${bottom}" class="thin" stroke-dasharray="8 8"/>${tag(sx(g.x)+8,top+18,g.label||`x = ${g.x}`)}`
+      : `<path d="M${left} ${sy(g.y).toFixed(1)}H${right}" class="thin" stroke-dasharray="8 8"/>${tag(right-12,sy(g.y)-8,g.label||`y = ${g.y}`,'end')}`).join('');
+    const curveMarks=curves.map(c=>`<path d="${pathFor(c)}" class="${c.className||'curve'}"/>${c.label?tag(sx(c.label.x),sy(c.label.y),c.label.text,c.label.anchor||'start'):''}`).join('');
+    const pointMarks=points.map(p=>`<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="${p.open?8:5}" ${p.open?'fill="var(--paper)" stroke="currentColor" stroke-width="3"':''}/>${tag(sx(p.x)+(p.dx??9),sy(p.y)+(p.dy??-8),p.label,p.anchor||'start')}`).join('');
+    const graphLabels=labels.map(item=>tag(sx(item.x),sy(item.y),item.text,item.anchor||'start')).join('');
+    return svg(label,`<rect x="${left}" y="${top}" width="${width}" height="${height}" class="thin"/><path d="M${left} ${axisX.toFixed(1)}H${right}M${axisY.toFixed(1)} ${bottom}V${top}" class="axis"/>${guideMarks}${curveMarks}${pointMarks}${graphLabels}`);
+  };
+  if(type==='radical-rational-exponent-representation') return radicalGraph({
+    label:'Graph of y equals x to the two thirds power, using cube root then square',
+    xMin:-8,xMax:8,yMin:-1,yMax:5,
+    curves:[{from:-8,to:8,fn:x=>Math.cbrt(x)**2,label:{x:3.8,y:2.7,text:'y = x^(2/3)'}}],
+    points:[{x:-8,y:4,label:'(-8, 4)',dx:10,dy:-8},{x:0,y:0,label:'cube root, then square',dx:12,dy:-10},{x:8,y:4,label:'(8, 4)',dx:-70,dy:-8,anchor:'end'}]
+  });
+  if(type==='radical-power-family-feature-comparison') return radicalGraph({
+    label:'Comparison of square root and cube root parent functions',
+    xMin:-9,xMax:10,yMin:-3,yMax:4,
+    curves:[{from:0,to:10,fn:x=>Math.sqrt(x),label:{x:5.7,y:2.4,text:'sqrt(x)'}},{from:-9,to:10,fn:x=>Math.cbrt(x),label:{x:-5.9,y:-1.65,text:'cube root x'}}],
+    points:[{x:0,y:0,label:'origin',dx:10,dy:-8},{x:4,y:2,label:'(4, 2)',dx:10,dy:-8},{x:-8,y:-2,label:'(-8, -2)',dx:12,dy:20}]
+  });
+  if(type==='radical-domain-range-representation') return radicalGraph({
+    label:'Graph of f of x equals square root of two x minus six with endpoint and domain',
+    xMin:0,xMax:13,yMin:-1,yMax:5,
+    curves:[{from:3,to:13,fn:x=>Math.sqrt(2*x-6),label:{x:8.3,y:3.4,text:'sqrt(2x - 6)'}}],
+    guides:[{x:3,label:'x = 3'}],
+    points:[{x:3,y:0,label:'endpoint (3, 0)',dx:12,dy:-9},{x:5,y:2,label:'(5, 2)',dx:10,dy:-8}],
+    labels:[{x:5.2,y:0.75,text:'domain: x >= 3'}]
+  });
+  if(type==='radical-transformation-point-mapping') return radicalGraph({
+    label:'Graph of g of x equals negative two square root of x minus one plus three',
+    xMin:-1,xMax:11,yMin:-5,yMax:4,
+    curves:[{from:1,to:11,fn:x=>-2*Math.sqrt(x-1)+3,label:{x:5.8,y:-1.6,text:'g(x) = -2sqrt(x - 1) + 3'}}],
+    guides:[{x:1,label:'x = 1'},{y:3,label:'y = 3'}],
+    points:[{x:1,y:3,label:'endpoint (1, 3)',dx:12,dy:-9},{x:2,y:1,label:'(2, 1)',dx:10,dy:-8},{x:5,y:-1,label:'(5, -1)',dx:10,dy:-8}]
+  });
+  if(type==='radical-equation-model-steps') return radicalGraph({
+    label:'Graph of square root of x plus one plus two and y equals six intersecting at x equals fifteen',
+    xMin:-1,xMax:17,yMin:0,yMax:7,
+    curves:[{from:-1,to:17,fn:x=>Math.sqrt(x+1)+2,label:{x:4,y:4.3,text:'sqrt(x + 1) + 2'}}],
+    guides:[{y:6,label:'y = 6'}],
+    points:[{x:15,y:6,label:'solution x = 15',dx:-112,dy:-10,anchor:'end'}]
+  });
+  if(type==='radical-extraneous-solution-representation') return radicalGraph({
+    label:'Graph showing square root of x plus two equals x has one real solution and one extraneous candidate',
+    xMin:-3,xMax:5,yMin:-3,yMax:4,
+    curves:[{from:-2,to:5,fn:x=>Math.sqrt(x+2),label:{x:-1.7,y:1.1,text:'sqrt(x + 2)'}},{from:-3,to:5,fn:x=>x,className:'heavy',label:{x:2.3,y:2.7,text:'y = x'}}],
+    points:[{x:2,y:2,label:'solution (2, 2)',dx:12,dy:-8},{x:-1,y:-1,label:'extraneous candidate',dx:12,dy:18}],
+    labels:[{x:-2.7,y:3.45,text:'x = -1 fails original'}]
+  });
   if(type.includes('transformation') || type.includes('parent-anchor') || type.includes('point-mapping') || type.includes('shift') || type.includes('stretch')) return svg('A parent graph and its transformed graph',`<path d="M55 270H755M400 295V25" class="axis"/><path d="M190 250Q280 55 370 250" class="thin"/><path d="M430 250Q535 100 640 250" class="curve"/><circle cx="280" cy="55" r="6"/><circle cx="535" cy="100" r="6"/><text x="160" y="50">parent</text><text x="595" y="85">transformed</text><path d="M300 75L490 100" class="heavy" marker-end="url(#arrow)"/>`);
   if(type.includes('model')) return svg('A model connects a situation, rule, and prediction',`${arrow}<rect x="40" y="90" width="190" height="130" class="shape"/><rect x="305" y="90" width="190" height="130" class="shape"/><rect x="570" y="90" width="190" height="130" class="shape"/><path d="M230 155H290M495 155H555" class="heavy" marker-end="url(#arrow)"/><text x="90" y="145" class="big">situation</text><text x="355" y="145" class="big">model</text><text x="610" y="145" class="big">prediction</text><text x="90" y="180">inputs</text><text x="350" y="180">equation</text><text x="620" y="180">meaning</text>`);
   if(type.includes('polynomial')) return svg('Polynomial zeros, multiplicity, and end behavior',`<path d="M55 270H755M400 295V25" class="axis"/><path d="M75 245C150 230 180 80 260 160S365 245 420 190S500 85 555 175S650 245 735 55" class="curve"/><circle cx="210" cy="205" r="6"/><circle cx="400" cy="205" r="6"/><circle cx="635" cy="205" r="6"/><text x="180" y="235">zero</text><text x="370" y="235">zero</text><text x="605" y="235">zero</text>`);
