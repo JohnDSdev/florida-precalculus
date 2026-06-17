@@ -88,6 +88,8 @@ sup { font-size:.6em; vertical-align:.6em; line-height:0; }
 .diagram .heavy { fill:none; stroke:currentColor; stroke-width:2.5; }
 .diagram .curve { fill:none; stroke:currentColor; stroke-width:3; }
 .diagram .strike { fill:none; stroke:currentColor; stroke-width:3; }
+.diagram .graph-tag rect { fill:var(--accent); stroke:var(--paper); stroke-width:1; }
+.diagram .graph-tag text { fill:#fff; font-size:14px; font-weight:700; }
 .note { border:1px solid var(--ink); padding:22px; margin:34px 0; line-height:1.55; display:grid; grid-template-columns:150px 1fr; gap:22px; }
 .note strong { text-transform:uppercase; letter-spacing:.08em; font-size:11px; }
 .check { margin-top:54px; border:1px solid var(--ink); padding:28px; }

@@ -252,12 +252,19 @@ function diagram(type) {
     };
     const axisX=yMin<0&&yMax>0?sy(0):bottom;
     const axisY=xMin<0&&xMax>0?sx(0):left;
+    const tag=(x,y,text,anchor='start')=>{
+      const clean=String(text);
+      const width=Math.max(36,clean.length*7.4+14);
+      const rectX=anchor==='end'?x-width:x;
+      const textX=anchor==='end'?x-7:x+7;
+      return `<g class="graph-tag"><rect x="${rectX.toFixed(1)}" y="${(y-15).toFixed(1)}" width="${width.toFixed(1)}" height="20" rx="0"/><text x="${textX.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="${anchor}">${clean}</text></g>`;
+    };
     const curvePaths=pieces.map(piece=>`<path d="${pathFor(piece)}" class="curve"/>`).join('');
-    const vGuides=vertical.map(x=>`<path d="M${sx(x).toFixed(1)} ${top}V${bottom}" class="thin" stroke-dasharray="8 8"/><text x="${(sx(x)+8).toFixed(1)}" y="${top+18}">x = ${x}</text>`).join('');
-    const hGuides=horizontal.map(y=>`<path d="M${left} ${sy(y).toFixed(1)}H${right}" class="thin" stroke-dasharray="8 8"/><text x="${right-92}" y="${(sy(y)-8).toFixed(1)}">y = ${y}</text>`).join('');
-    const holeMarks=holes.map(h=>`<circle cx="${sx(h.x).toFixed(1)}" cy="${sy(h.y).toFixed(1)}" r="8" fill="var(--paper)" stroke="currentColor" stroke-width="3"/><text x="${(sx(h.x)+(h.dx??13)).toFixed(1)}" y="${(sy(h.y)+(h.dy??5)).toFixed(1)}">${h.label||'hole'}</text>`).join('');
-    const pointMarks=points.map(p=>`<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="5"/><text x="${(sx(p.x)+(p.dx??9)).toFixed(1)}" y="${(sy(p.y)+(p.dy??-8)).toFixed(1)}">${p.label}</text>`).join('');
-    const graphLabels=labels.map(item=>`<text x="${sx(item.x).toFixed(1)}" y="${sy(item.y).toFixed(1)}">${item.text}</text>`).join('');
+    const vGuides=vertical.map(x=>`<path d="M${sx(x).toFixed(1)} ${top}V${bottom}" class="thin" stroke-dasharray="8 8"/>${tag(sx(x)+8,top+18,`x = ${x}`)}`).join('');
+    const hGuides=horizontal.map(y=>`<path d="M${left} ${sy(y).toFixed(1)}H${right}" class="thin" stroke-dasharray="8 8"/>${tag(right-12,sy(y)-8,`y = ${y}`,'end')}`).join('');
+    const holeMarks=holes.map(h=>`<circle cx="${sx(h.x).toFixed(1)}" cy="${sy(h.y).toFixed(1)}" r="8" fill="var(--paper)" stroke="currentColor" stroke-width="3"/>${tag(sx(h.x)+(h.dx??13),sy(h.y)+(h.dy??5),h.label||'hole',h.anchor||'start')}`).join('');
+    const pointMarks=points.map(p=>`<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="5"/>${tag(sx(p.x)+(p.dx??9),sy(p.y)+(p.dy??-8),p.label,p.anchor||'start')}`).join('');
+    const graphLabels=labels.map(item=>tag(sx(item.x),sy(item.y),item.text,item.anchor||'start')).join('');
     return svg(label,`<rect x="${left}" y="${top}" width="${width}" height="${height}" class="thin"/><path d="M${left} ${axisX.toFixed(1)}H${right}M${axisY.toFixed(1)} ${bottom}V${top}" class="axis"/>${hGuides}${vGuides}${curvePaths}${holeMarks}${pointMarks}${graphLabels}`);
   };
   if(type==='rational-domain-number-line') return rationalGraph({
