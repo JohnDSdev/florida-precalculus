@@ -230,7 +230,73 @@ function diagram(type) {
   if(type.includes('transformation') || type.includes('parent-anchor') || type.includes('point-mapping') || type.includes('shift') || type.includes('stretch')) return svg('A parent graph and its transformed graph',`<path d="M55 270H755M400 295V25" class="axis"/><path d="M190 250Q280 55 370 250" class="thin"/><path d="M430 250Q535 100 640 250" class="curve"/><circle cx="280" cy="55" r="6"/><circle cx="535" cy="100" r="6"/><text x="160" y="50">parent</text><text x="595" y="85">transformed</text><path d="M300 75L490 100" class="heavy" marker-end="url(#arrow)"/>`);
   if(type.includes('model')) return svg('A model connects a situation, rule, and prediction',`${arrow}<rect x="40" y="90" width="190" height="130" class="shape"/><rect x="305" y="90" width="190" height="130" class="shape"/><rect x="570" y="90" width="190" height="130" class="shape"/><path d="M230 155H290M495 155H555" class="heavy" marker-end="url(#arrow)"/><text x="90" y="145" class="big">situation</text><text x="355" y="145" class="big">model</text><text x="610" y="145" class="big">prediction</text><text x="90" y="180">inputs</text><text x="350" y="180">equation</text><text x="620" y="180">meaning</text>`);
   if(type.includes('polynomial')) return svg('Polynomial zeros, multiplicity, and end behavior',`<path d="M55 270H755M400 295V25" class="axis"/><path d="M75 245C150 230 180 80 260 160S365 245 420 190S500 85 555 175S650 245 735 55" class="curve"/><circle cx="210" cy="205" r="6"/><circle cx="400" cy="205" r="6"/><circle cx="635" cy="205" r="6"/><text x="180" y="235">zero</text><text x="370" y="235">zero</text><text x="605" y="235">zero</text>`);
-  if(type.includes('rational')) return svg('Rational function with a hole and asymptotes',`<path d="M55 270H755M400 295V25" class="axis"/><path d="M255 25V290M55 90H755" class="strike" stroke-dasharray="8 8"/><path d="M70 245C130 235 205 205 245 135M270 285C310 215 350 155 390 120M420 75C500 45 615 50 740 65" class="curve"/><circle cx="340" cy="170" r="9" fill="var(--paper)" stroke="currentColor" stroke-width="3"/><text x="185" y="45">vertical asymptote</text><text x="570" y="78">horizontal asymptote</text><text x="350" y="195">hole</text>`);
+  const rationalGraph = ({label,xMin=-6,xMax=6,yMin=-5,yMax=5,pieces,vertical=[],horizontal=[],holes=[],points=[],labels=[]}) => {
+    const left=70,right=750,top=35,bottom=285,width=right-left,height=bottom-top;
+    const sx=x=>left+((x-xMin)/(xMax-xMin))*width;
+    const sy=y=>bottom-((y-yMin)/(yMax-yMin))*height;
+    const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
+    const pathFor=piece=>{
+      const commands=[];
+      let lastZone='';
+      for(let i=0;i<=120;i++) {
+        const x=piece.from+(piece.to-piece.from)*(i/120);
+        const rawY=piece.fn(x);
+        if(!Number.isFinite(rawY)) continue;
+        const zone=rawY>yMax?'above':rawY<yMin?'below':'inside';
+        if(zone!=='inside'&&zone===lastZone) continue;
+        const y=clamp(rawY,yMin,yMax);
+        commands.push(`${commands.length?'L':'M'}${sx(x).toFixed(1)} ${sy(y).toFixed(1)}`);
+        lastZone=zone;
+      }
+      return commands.join('');
+    };
+    const axisX=yMin<0&&yMax>0?sy(0):bottom;
+    const axisY=xMin<0&&xMax>0?sx(0):left;
+    const curvePaths=pieces.map(piece=>`<path d="${pathFor(piece)}" class="curve"/>`).join('');
+    const vGuides=vertical.map(x=>`<path d="M${sx(x).toFixed(1)} ${top}V${bottom}" class="thin" stroke-dasharray="8 8"/><text x="${(sx(x)+8).toFixed(1)}" y="${top+18}">x = ${x}</text>`).join('');
+    const hGuides=horizontal.map(y=>`<path d="M${left} ${sy(y).toFixed(1)}H${right}" class="thin" stroke-dasharray="8 8"/><text x="${right-92}" y="${(sy(y)-8).toFixed(1)}">y = ${y}</text>`).join('');
+    const holeMarks=holes.map(h=>`<circle cx="${sx(h.x).toFixed(1)}" cy="${sy(h.y).toFixed(1)}" r="8" fill="var(--paper)" stroke="currentColor" stroke-width="3"/><text x="${(sx(h.x)+(h.dx??13)).toFixed(1)}" y="${(sy(h.y)+(h.dy??5)).toFixed(1)}">${h.label||'hole'}</text>`).join('');
+    const pointMarks=points.map(p=>`<circle cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="5"/><text x="${(sx(p.x)+(p.dx??9)).toFixed(1)}" y="${(sy(p.y)+(p.dy??-8)).toFixed(1)}">${p.label}</text>`).join('');
+    const graphLabels=labels.map(item=>`<text x="${sx(item.x).toFixed(1)}" y="${sy(item.y).toFixed(1)}">${item.text}</text>`).join('');
+    return svg(label,`<rect x="${left}" y="${top}" width="${width}" height="${height}" class="thin"/><path d="M${left} ${axisX.toFixed(1)}H${right}M${axisY.toFixed(1)} ${bottom}V${top}" class="axis"/>${hGuides}${vGuides}${curvePaths}${holeMarks}${pointMarks}${graphLabels}`);
+  };
+  if(type==='rational-domain-number-line') return rationalGraph({
+    label:'Graph of f(x) equals x plus 1 divided by x minus 3, with x equals 3 excluded',
+    xMin:-5,xMax:7,yMin:-5,yMax:5,
+    pieces:[{from:-5,to:2.93,fn:x=>(x+1)/(x-3)},{from:3.07,to:7,fn:x=>(x+1)/(x-3)}],
+    vertical:[3],horizontal:[1],
+    labels:[{x:-3.7,y:2.2,text:'domain: x ≠ 3'}]
+  });
+  if(type==='rational-factor-map'||type==='rational-hole-versus-asymptote') return rationalGraph({
+    label:'Graph of x squared minus 4 divided by x squared minus x minus 6, with a hole at negative 2 and vertical asymptote x equals 3',
+    xMin:-6,xMax:7,yMin:-4,yMax:6,
+    pieces:[{from:-6,to:2.93,fn:x=>(x-2)/(x-3)},{from:3.07,to:7,fn:x=>(x-2)/(x-3)}],
+    vertical:[3],horizontal:[1],
+    holes:[{x:-2,y:0.8,label:'hole (-2, 4/5)',dx:14,dy:-12}],
+    points:[{x:2,y:0,label:'x-int',dx:10,dy:-10}]
+  });
+  if(type==='rational-end-behavior') return rationalGraph({
+    label:'Graph of 2 x squared plus 1 divided by x squared minus 4, with horizontal asymptote y equals 2',
+    xMin:-6,xMax:6,yMin:-6,yMax:8,
+    pieces:[{from:-6,to:-2.06,fn:x=>(2*x*x+1)/(x*x-4)},{from:-1.94,to:1.94,fn:x=>(2*x*x+1)/(x*x-4)},{from:2.06,to:6,fn:x=>(2*x*x+1)/(x*x-4)}],
+    vertical:[-2,2],horizontal:[2],
+    labels:[{x:2.65,y:5.8,text:'approaches y = 2'}]
+  });
+  if(type==='rational-sign-intervals') return rationalGraph({
+    label:'Graph of x minus 4 divided by x plus 2, with intercepts and asymptotes',
+    xMin:-6,xMax:7,yMin:-6,yMax:6,
+    pieces:[{from:-6,to:-2.06,fn:x=>(x-4)/(x+2)},{from:-1.94,to:7,fn:x=>(x-4)/(x+2)}],
+    vertical:[-2],horizontal:[1],
+    points:[{x:4,y:0,label:'(4, 0)'},{x:0,y:-2,label:'(0, -2)'}]
+  });
+  if(type==='rational-complete-graph'||type.includes('rational')) return rationalGraph({
+    label:'Complete graph of x squared minus 1 divided by x squared minus x minus 2, with hole, intercepts, and asymptotes',
+    xMin:-5,xMax:6,yMin:-4,yMax:5,
+    pieces:[{from:-5,to:1.93,fn:x=>(x-1)/(x-2)},{from:2.07,to:6,fn:x=>(x-1)/(x-2)}],
+    vertical:[2],horizontal:[1],
+    holes:[{x:-1,y:2/3,label:'hole (-1, 2/3)',dx:-115,dy:-8}],
+    points:[{x:1,y:0,label:'(1, 0)',dx:12,dy:-9},{x:0,y:0.5,label:'(0, 1/2)',dx:8,dy:-15}]
+  });
   if(type.includes('radical') || type.includes('power')) return svg('A radical or power graph with its allowed inputs marked',`${arrow}<path d="M55 270H755M400 295V25" class="axis"/><path d="M400 220C445 170 510 130 700 82" class="curve"/><circle cx="400" cy="220" r="7"/><path d="M115 245H350" class="heavy" marker-end="url(#arrow)"/><text x="105" y="220">check the domain</text><text x="425" y="250">starting point</text><text x="560" y="105">power shape</text>`);
   if(type.includes('exponential')) return svg('An exponential model grows by equal multiplication factors',`${arrow}<path d="M55 270H755M105 295V25" class="axis"/><path d="M110 245C285 238 405 215 500 165S645 70 730 35" class="curve"/><circle cx="210" cy="235" r="6"/><circle cx="350" cy="215" r="6"/><circle cx="490" cy="170" r="6"/><path d="M210 285H350M350 285H490" class="thin" marker-end="url(#arrow)"/><text x="250" y="310">equal input steps</text><text x="485" y="125">multiply by b</text>`);
   if(type.includes('logarithmic')) return svg('Logarithmic and exponential functions reflect across y equals x',`<path d="M55 270H755M400 295V25" class="axis"/><path d="M90 285L710 35" class="thin" stroke-dasharray="8 8"/><path d="M410 250C470 245 550 220 610 165S690 70 720 35" class="curve"/><path d="M85 255C110 185 165 125 245 80S340 45 390 40" class="heavy"/><text x="585" y="195">exponential</text><text x="120" y="105">logarithm</text><text x="440" y="65">y = x</text>`);
