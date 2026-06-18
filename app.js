@@ -123,6 +123,10 @@ function algebraicallyEquivalent(left,right) {
 function matches(value, accepted) {
   return accepted.some(answer => normalize(answer)===normalize(value)||algebraicallyEquivalent(value,answer));
 }
+function checkMatches(check, form) {
+  if(!check.parts) return matches(form.querySelector('input').value, check.accept);
+  return check.parts.every((part,i)=>matches(form.querySelector(`[data-part="${i}"]`)?.value || '', part.accept));
+}
 function escapeHTML(value) {
   return String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -403,8 +407,14 @@ function diagram(type) {
   return svg('A secant line through two points on a curve',`<path d="M70 270H750M115 295V30" class="axis"/><path d="M125 250 C260 280 475 220 690 55" class="curve"/><path d="M${close?280:215} ${close?225:250}L${close?500:610} ${close?145:105}" class="heavy"/><circle cx="${close?280:215}" cy="${close?225:250}" r="7"/><circle cx="${close?500:610}" cy="${close?145:105}" r="7"/><text x="${close?205:135}" y="${close?260:285}">(x, f(x))</text><text x="${close?510:615}" y="${close?135:95}">(x+h, f(x+h))</text><text x="390" y="82">secant line</text>`);
 }
 
-function mathEntry(label='Your answer') {
-  return `<div class="math-entry"><div class="math-preview empty" aria-hidden="true">Your math will appear here</div><input aria-label="${label}" autocomplete="off" spellcheck="false" placeholder="Type with ^ for powers and / for fractions"></div>`;
+function mathEntry(label='Your answer', part=null, placeholder='Type with ^ for powers and / for fractions') {
+  const partAttr = part === null ? '' : ` data-part="${part}"`;
+  return `<div class="math-entry"><div class="math-preview empty" aria-hidden="true">Your math will appear here</div><input${partAttr} aria-label="${escapeHTML(label)}" autocomplete="off" spellcheck="false" placeholder="${escapeHTML(placeholder)}"></div>`;
+}
+function checkEntry(check) {
+  if(!check.parts) return `<div class="answer-row">${mathEntry(check.label || 'Your answer')}<button class="primary">Check</button></div>`;
+  const fields=check.parts.map((part,i)=>`<label class="part-entry"><span>${escapeHTML(part.label)}</span>${mathEntry(part.label,i,part.placeholder || 'Type your answer')}</label>`).join('');
+  return `<div class="part-grid">${fields}</div><button class="primary check-submit">Check</button>`;
 }
 function practiceEntry(question) {
   if(!question.choices) return mathEntry('Practice answer');
@@ -415,7 +425,7 @@ function lessonSection() {
   const extraStart = lesson.sections.length + 1;
   const rail = lesson.sections.map((item,i)=>`<button data-section="${i}" class="${i===state.section?'active':''}"><span>${item.label}</span>${item.title}</button>`).join('') + `<button data-go="examples"><span>${String(extraStart).padStart(2,'0')}</span>Examples</button><button data-go="practice"><span>${String(extraStart+1).padStart(2,'0')}</span>Practice</button>`;
   const format = s.check.format ? `<p class="answer-format"><strong>Type it like:</strong> ${mathHTML(s.check.format)}</p>` : '';
-  layout(`<section class="lesson-screen"><nav class="rail" style="--rail-items:${lesson.sections.length+2}" aria-label="Lesson sections">${rail}</nav><article class="lesson-content" tabindex="-1"><p class="kicker">${s.kicker}</p><h2>${s.title}</h2><div class="prose">${s.body.map(p=>`<p>${p}</p>`).join('')}</div><div class="formula">${mathHTML(s.formula)}</div><figure class="diagram">${diagram(s.diagram)}</figure><aside class="note"><strong>Keep in mind</strong>${s.note}</aside><section class="check"><span class="check-label">Pause and try · press A to jump here</span><h3>${mathHTML(s.check.prompt)}</h3>${format}<form data-check><div class="answer-row">${mathEntry()}<button class="primary">Check</button></div></form><p class="feedback">${state.feedback}</p></section><nav class="screen-nav"><button data-prev ${state.section===0?'disabled':''}>← Previous</button><button data-next>${state.section===lesson.sections.length-1?'Worked examples →':'Next step →'}</button></nav></article></section>`);
+  layout(`<section class="lesson-screen"><nav class="rail" style="--rail-items:${lesson.sections.length+2}" aria-label="Lesson sections">${rail}</nav><article class="lesson-content" tabindex="-1"><p class="kicker">${s.kicker}</p><h2>${s.title}</h2><div class="prose">${s.body.map(p=>`<p>${p}</p>`).join('')}</div><div class="formula">${mathHTML(s.formula)}</div><figure class="diagram">${diagram(s.diagram)}</figure><aside class="note"><strong>Keep in mind</strong>${s.note}</aside><section class="check"><span class="check-label">Pause and try · press A to jump here</span><h3>${mathHTML(s.check.prompt)}</h3>${format}<form data-check>${checkEntry(s.check)}</form><p class="feedback">${state.feedback}</p></section><nav class="screen-nav"><button data-prev ${state.section===0?'disabled':''}>← Previous</button><button data-next>${state.section===lesson.sections.length-1?'Worked examples →':'Next step →'}</button></nav></article></section>`);
 }
 function examples() {
   layout(`<section class="examples"><p class="eyebrow">Three complete references</p><h1>Worked<br>examples.</h1>${lesson.examples.map((ex,i)=>`<article class="example" id="example-${i}"><div><span class="eyebrow">Example 0${i+1}</span><h2>${ex.title}</h2></div><div><div class="example-problem">${mathHTML(ex.problem)}</div><ol class="steps">${ex.steps.map(x=>`<li>${mathHTML(x)}</li>`).join('')}</ol></div></article>`).join('')}<nav class="screen-nav"><button data-section="${lesson.sections.length-1}">← Back to lesson</button><button data-go="practice">${state.exampleReturn !== null ? 'Return to practice →' : 'Begin mastery practice →'}</button></nav></section>`);
@@ -550,8 +560,8 @@ function bind() {
   document.querySelector('[data-prev]')?.addEventListener('click',prev);
   document.querySelectorAll('.math-entry input').forEach(input=>input.addEventListener('input',()=>updateMathPreview(input)));
   document.querySelector('[data-check]')?.addEventListener('submit',e=>{
-    e.preventDefault(); const s=lesson.sections[state.section]; const value=e.target.querySelector('input').value;
-    const correct=matches(value,s.check.accept);
+    e.preventDefault(); const s=lesson.sections[state.section];
+    const correct=checkMatches(s.check,e.target);
     if(correct && !lessonProgress().passed.includes(s.id)) lessonProgress().passed.push(s.id);
     state.feedback=correct?'Correct. Now press → for the next step.':`Not yet. ${s.check.hint}`;
     persist();

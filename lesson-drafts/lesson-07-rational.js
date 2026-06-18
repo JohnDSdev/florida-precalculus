@@ -22,6 +22,9 @@ window.COURSE.lessons["rational-functions"] = {
       check: {
         prompt: "Find the excluded x-values for r(x) = 2/[(x − 4)(x + 1)].",
         answer: "x=4,-1",
+        parts: [
+          { label: "Excluded x-values (list both)", placeholder: "4,-1", accept: ["x=4,-1", "x = 4, -1", "4,-1", "-1,4", "x=-1,4", "x = -1, 4"] }
+        ],
         accept: ["x=4,-1", "x = 4, -1", "4,-1", "-1,4", "x=-1,4", "x = -1, 4"],
         hint: "Set each denominator factor equal to zero: x − 4 = 0 and x + 1 = 0."
       }
@@ -41,6 +44,10 @@ window.COURSE.lessons["rational-functions"] = {
       check: {
         prompt: "Simplify (x² − 9)/(x² + 5x + 6), while keeping the original restrictions.",
         answer: "(x-3)/(x+2),x!=-3,-2",
+        parts: [
+          { label: "Simplified expression", placeholder: "(x-3)/(x+2)", accept: ["(x-3)/(x+2)", "(x−3)/(x+2)", "(x - 3)/(x + 2)"] },
+          { label: "Original excluded x-values", placeholder: "-3,-2", accept: ["-3,-2", "-2,-3", "x!=-3,-2", "x != -3, -2", "x=-3,-2 excluded", "-3 and -2"] }
+        ],
         accept: ["(x-3)/(x+2),x!=-3,-2", "(x−3)/(x+2), x≠−3,−2", "(x-3)/(x+2), x != -3, -2", "(x-3)/(x+2);x=-3,-2 excluded"],
         hint: "Factor: x² − 9 = (x − 3)(x + 3) and x² + 5x + 6 = (x + 2)(x + 3)."
       }
@@ -60,7 +67,10 @@ window.COURSE.lessons["rational-functions"] = {
       check: {
         prompt: "For h(x) = [(x − 5)(x + 1)]/[(x − 5)(x − 2)], identify the hole x-value and the vertical asymptote.",
         answer: "hole x=5; VA x=2",
-        format: "hole x=5; VA x=2",
+        parts: [
+          { label: "Hole x-value only", placeholder: "5", accept: ["5", "x=5", "x = 5", "hole x=5", "hole=5"] },
+          { label: "Vertical asymptote x-value only", placeholder: "2", accept: ["2", "x=2", "x = 2", "va x=2", "vertical asymptote x=2", "va=2"] }
+        ],
         accept: ["hole x=5; va x=2", "hole: x=5, vertical asymptote: x=2", "hole 5, va 2", "x=5 hole;x=2 asymptote", "hole=5,va=2", "hole = 5, va = 2", "5,2", "5;2"],
         hint: "The canceled factor x − 5 gives the hole. The factor x − 2 remains below the fraction bar."
       }
@@ -80,6 +90,9 @@ window.COURSE.lessons["rational-functions"] = {
       check: {
         prompt: "Find the horizontal asymptote of k(x) = (6x² − 1)/(3x² + 5x).",
         answer: "y=2",
+        parts: [
+          { label: "Horizontal asymptote equation", placeholder: "y=2", accept: ["y=2", "y = 2", "2"] }
+        ],
         accept: ["y=2", "y = 2", "2"],
         hint: "The degrees match, so divide the leading coefficients: 6/3."
       }
@@ -99,6 +112,10 @@ window.COURSE.lessons["rational-functions"] = {
       check: {
         prompt: "For p(x) = (x − 4)/(x + 2), give the x-intercept and y-intercept.",
         answer: "(4,0),(0,-2)",
+        parts: [
+          { label: "x-intercept point", placeholder: "(4,0)", accept: ["(4,0)", "(4, 0)", "4,0", "x=4", "4"] },
+          { label: "y-intercept point", placeholder: "(0,-2)", accept: ["(0,-2)", "(0, -2)", "0,-2", "y=-2", "-2"] }
+        ],
         accept: ["(4,0),(0,-2)", "(4, 0), (0, -2)", "x-int (4,0); y-int (0,-2)", "x=4,y=-2"],
         hint: "Set x − 4 = 0 for the x-intercept. Then compute p(0) = −4/2."
       }
@@ -118,6 +135,10 @@ window.COURSE.lessons["rational-functions"] = {
       check: {
         prompt: "For q(x) above, what are the hole and vertical asymptote?",
         answer: "hole (-1,2/3); VA x=2",
+        parts: [
+          { label: "Hole point", placeholder: "(-1,2/3)", accept: ["(-1,2/3)", "(-1, 2/3)", "(-1,0.6667)", "(-1, 0.6667)", "-1,2/3"] },
+          { label: "Vertical asymptote x-value only", placeholder: "2", accept: ["2", "x=2", "x = 2", "va x=2", "vertical asymptote x=2", "va=2"] }
+        ],
         accept: ["hole (-1,2/3); va x=2", "(-1,2/3), x=2", "hole: (-1, 2/3), vertical asymptote: x=2", "hole (-1,0.6667);va 2"],
         hint: "The canceled x + 1 factor gives the hole. The remaining denominator x − 2 gives the vertical asymptote."
       }

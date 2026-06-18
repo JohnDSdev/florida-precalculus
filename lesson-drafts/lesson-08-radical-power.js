@@ -23,7 +23,9 @@ window.COURSE.lessons["radical-power-functions"] = {
       check: {
         prompt: "Evaluate 27^(2/3).",
         answer: "9",
-        format: "9",
+        parts: [
+          { label: "Value (number)", placeholder: "9", accept: ["9", "9.0", "3^2", "3²"] }
+        ],
         accept: ["9", "9.0", "3^2", "3²"],
         hint: "The denominator 3 means cube root: cube root of 27 is 3. Then apply the numerator 2 by squaring."
       }
@@ -44,7 +46,9 @@ window.COURSE.lessons["radical-power-functions"] = {
       check: {
         prompt: "Which parent function accepts every real x and has origin symmetry: sqrt(x) or cube root of x?",
         answer: "cube root of x",
-        format: "cube root of x",
+        parts: [
+          { label: "Parent function name", placeholder: "cube root of x", accept: ["cube root of x", "the cube root function", "cube root", "x^(1/3)", "x^1/3", "∛x"] }
+        ],
         accept: ["cube root of x", "the cube root function", "cube root", "x^(1/3)", "x^1/3", "∛x"],
         hint: "Odd roots accept negative, zero, and positive radicands."
       }
@@ -65,7 +69,9 @@ window.COURSE.lessons["radical-power-functions"] = {
       check: {
         prompt: "State the domain of f(x) = sqrt(x + 4) in interval notation.",
         answer: "[-4,infinity)",
-        format: "[-4,infinity) or x>=-4",
+        parts: [
+          { label: "Domain (interval or inequality)", placeholder: "[-4,infinity)", accept: ["[-4,infinity)", "[-4, infinity)", "[-4,∞)", "[-4, ∞)", "x>=-4", "x >= -4", "x≥-4", "x ≥ -4"] }
+        ],
         accept: ["[-4,infinity)", "[-4, infinity)", "[-4,∞)", "[-4, ∞)", "x>=-4", "x >= -4", "x≥-4", "x ≥ -4"],
         hint: "Require x + 4 >= 0, then subtract 4 from both sides."
       }
@@ -86,7 +92,9 @@ window.COURSE.lessons["radical-power-functions"] = {
       check: {
         prompt: "Give the endpoint of y = 3sqrt(x + 2) - 5.",
         answer: "(-2,-5)",
-        format: "(-2,-5)",
+        parts: [
+          { label: "Endpoint point", placeholder: "(-2,-5)", accept: ["(-2,-5)", "(-2, -5)", "(-2,−5)", "endpoint (-2,-5)", "x=-2,y=-5"] }
+        ],
         accept: ["(-2,-5)", "(-2, -5)", "(-2,−5)", "endpoint (-2,-5)", "x=-2,y=-5"],
         hint: "Rewrite x + 2 as x - (-2). The outside shift is -5."
       }
@@ -107,7 +115,9 @@ window.COURSE.lessons["radical-power-functions"] = {
       check: {
         prompt: "Solve sqrt(3x - 2) = 5.",
         answer: "9",
-        format: "x=9 or 9",
+        parts: [
+          { label: "Solution x-value", placeholder: "9", accept: ["9", "x=9", "x = 9", "9.0"] }
+        ],
         accept: ["9", "x=9", "x = 9", "9.0"],
         hint: "Square both sides to get 3x - 2 = 25. Then add 2 and divide by 3."
       }
@@ -128,7 +138,9 @@ window.COURSE.lessons["radical-power-functions"] = {
       check: {
         prompt: "For sqrt(x + 6) = x, squaring gives candidates x = 3 and x = -2. Which candidate is extraneous?",
         answer: "-2",
-        format: "x=-2 or -2",
+        parts: [
+          { label: "Extraneous candidate x-value", placeholder: "-2", accept: ["-2", "−2", "x=-2", "x = -2", "-2 is extraneous", "x=-2 is extraneous"] }
+        ],
         accept: ["-2", "−2", "x=-2", "x = -2", "-2 is extraneous", "x=-2 is extraneous"],
         hint: "Test both in the original equation. A principal square root cannot equal a negative right-hand side."
       }
