@@ -60,7 +60,8 @@ window.COURSE.lessons["rational-functions"] = {
       check: {
         prompt: "For h(x) = [(x − 5)(x + 1)]/[(x − 5)(x − 2)], identify the hole x-value and the vertical asymptote.",
         answer: "hole x=5; VA x=2",
-        accept: ["hole x=5; va x=2", "hole: x=5, vertical asymptote: x=2", "hole 5, va 2", "x=5 hole;x=2 asymptote"],
+        format: "hole x=5; VA x=2",
+        accept: ["hole x=5; va x=2", "hole: x=5, vertical asymptote: x=2", "hole 5, va 2", "x=5 hole;x=2 asymptote", "hole=5,va=2", "hole = 5, va = 2", "5,2", "5;2"],
         hint: "The canceled factor x − 5 gives the hole. The factor x − 2 remains below the fraction bar."
       }
     },
