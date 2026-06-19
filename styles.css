@@ -94,8 +94,6 @@ sup { font-size:.6em; vertical-align:.6em; line-height:0; }
 .note strong { text-transform:uppercase; letter-spacing:.08em; font-size:11px; }
 .check { margin-top:54px; border:1px solid var(--ink); padding:28px; }
 .check h3 { font-size:27px; line-height:1.3; font-weight:700; }
-.answer-format { margin:0 0 18px; border-left:4px solid var(--accent); padding:10px 14px; background:var(--soft); line-height:1.45; }
-.answer-format strong { text-transform:uppercase; letter-spacing:.08em; font-size:11px; margin-right:8px; }
 .answer-row { display:grid; grid-template-columns:1fr auto; gap:14px; align-items:end; }
 .part-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; align-items:start; }
 .part-entry { display:grid; gap:9px; text-transform:uppercase; letter-spacing:.08em; font-size:11px; color:var(--muted); }
