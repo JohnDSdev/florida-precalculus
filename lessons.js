@@ -3,12 +3,12 @@ window.COURSE = {
   courseNumber: "1202340",
   units: [
     { number: "01", title: "Functions as change", detail: "Difference quotients, composition, inverses and function comparison", planned: 6, lessons: ["difference-quotients", "function-composition", "inverse-functions", "function-transformations", "choosing-function-models"] },
-    { number: "02", title: "Advanced function models", detail: "Polynomial, rational, radical, exponential, logarithmic and piecewise models", planned: 5, lessons: ["polynomial-behavior", "rational-functions"] },
-    { number: "03", title: "Sequences & series", detail: "Arithmetic and geometric sequences, finite and infinite series", planned: 4, lessons: [] },
-    { number: "04", title: "Trigonometry", detail: "Radians, the unit circle, identities, equations and periodic models", planned: 9, lessons: [] },
-    { number: "05", title: "Conic sections", detail: "Circles, parabolas, ellipses and hyperbolas", planned: 4, lessons: [] },
-    { number: "06", title: "Complex numbers & vectors", detail: "Complex plane, polar form, vector operations and applications", planned: 4, lessons: [] },
-    { number: "07", title: "Polar & parametric", detail: "Polar graphs, coordinate conversion and motion in the plane", planned: 4, lessons: [] }
+    { number: "02", title: "Advanced function models", detail: "Polynomial, rational, radical, exponential, logarithmic and piecewise models", planned: 5, lessons: ["polynomial-behavior", "rational-functions", "radical-power-functions", "exponential-functions", "logarithmic-functions"] },
+    { number: "03", title: "Sequences & series", detail: "Arithmetic and geometric sequences, finite and infinite series", planned: 4, lessons: ["sequences-recursive-rules", "arithmetic-sequences-series", "geometric-sequences-series", "infinite-series-finance"] },
+    { number: "04", title: "Trigonometry", detail: "Radians, the unit circle, identities, equations and periodic models", planned: 9, lessons: ["angles-radian-measure", "building-unit-circle", "unit-circle-values", "sine-cosine-graphs", "other-trig-graphs", "inverse-trig-functions", "fundamental-trig-identities", "angle-sum-multiple-angle-identities", "trig-equations-applications"] },
+    { number: "05", title: "Conic sections", detail: "Circles, parabolas, ellipses and hyperbolas", planned: 4, lessons: ["circles-conic-sections", "parabolas-conic-sections", "ellipses", "hyperbolas"] },
+    { number: "06", title: "Complex numbers & vectors", detail: "Complex plane, polar form, vector operations and applications", planned: 4, lessons: ["complex-plane", "complex-polar-form", "vectors-operations", "vector-applications"] },
+    { number: "07", title: "Polar & parametric", detail: "Polar graphs, coordinate conversion and motion in the plane", planned: 4, lessons: ["polar-coordinates"] }
   ],
   lessons: {
     "difference-quotients": {
