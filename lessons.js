@@ -8,7 +8,7 @@ window.COURSE = {
     { number: "04", title: "Trigonometry", detail: "Radians, the unit circle, identities, equations and periodic models", planned: 9, lessons: ["angles-radian-measure", "building-unit-circle", "unit-circle-values", "sine-cosine-graphs", "other-trig-graphs", "inverse-trig-functions", "fundamental-trig-identities", "angle-sum-multiple-angle-identities", "trig-equations-applications"] },
     { number: "05", title: "Conic sections", detail: "Circles, parabolas, ellipses and hyperbolas", planned: 4, lessons: ["circles-conic-sections", "parabolas-conic-sections", "ellipses", "hyperbolas"] },
     { number: "06", title: "Complex numbers & vectors", detail: "Complex plane, polar form, vector operations and applications", planned: 4, lessons: ["complex-plane", "complex-polar-form", "vectors-operations", "vector-applications"] },
-    { number: "07", title: "Polar & parametric", detail: "Polar graphs, coordinate conversion and motion in the plane", planned: 4, lessons: ["polar-coordinates"] }
+    { number: "07", title: "Polar & parametric", detail: "Polar graphs, coordinate conversion and motion in the plane", planned: 5, lessons: ["polar-coordinates", "polar-graphs", "parametric-equations", "systems-relations", "course-synthesis-ap-readiness"] }
   ],
   lessons: {
     "difference-quotients": {
